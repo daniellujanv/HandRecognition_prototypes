@@ -1,5 +1,6 @@
 import cv2
 import HandRecognition as recon
+from datetime import datetime, time
 import Tools as tools
 
 #------------------------- main method -------------------------------------------------
@@ -9,7 +10,14 @@ imgSize2 = (620, 440)
 imgSize3 = (310, 310)
 descriptorSize = 50
 descriptorSteps = 35
-labels_dictionary = ["A", "B", "C", "V", "Point", "Five"] #for approach 6
+labels_dictionary = ["A", "B", "C", "V", "Point", "Five"] #for approach 6 and 7
+##labels
+## A = 0
+## B = 1
+## C = 2
+## V = 3
+## Points = 4
+## Five = 5
 
 
 '''
@@ -33,27 +41,32 @@ hand_22 = cv2.resize(cv2.imread('./images/hand_22.jpg'), imgSize)
 #cv2.waitKey(0)
 
 '''
-
-#knn = K-Nearest Neighbors
+###knn = K-Nearest Neighbors
 #knn = recon.approach6TrainingInit(descriptorSize, descriptorSteps,resize=imgSize3)
-knn = recon.approach6TrainingFromFiles(descriptorSize, descriptorSteps,resize=imgSize3)
-print "done training"
-
 newComerName = 'hand_22.jpg'
 newcomer = cv2.resize(cv2.imread('HandGestureDB/test/'+newComerName), imgSize3)
 
-result, _, _, _ = recon.approach6Classify(knn, newComerName, descriptorSize, descriptorSteps, imgSize=imgSize3)
-result = int(result)
-    #labels
-    # A = 0
-    # B = 1
-    # C = 2
-    # V = 3
-    # Points = 4
-    # Five = 5
-print("newComer results:", result)
-print("Label: ", labels_dictionary[result])
-cv2.imshow("Gesture: "+labels_dictionary[result], newcomer)
+initial_KNN = datetime.now()
+knn = recon.approach6TrainingFromFiles(descriptorSize, descriptorSteps,resize=imgSize3)
+result_KNN, _, _, _ = recon.approach6Classify(knn, newComerName, descriptorSize, descriptorSteps, imgSize=imgSize3)
+time_KNN = (datetime.now() - initial_KNN).microseconds
+print("sift+knn___TIME: ", time_KNN)
+#print("SIFT+KNN: newComer results:", result_KNN)
+#print("SIFT+KNN: Label: ", labels_dictionary[result_KNN])
+
+##svm = suport vector machine
+#svm = recon.approach7TrainingInit()
+initial_SVM = datetime.now()
+svm = recon.approach7TrainingFromFile()
+result_SVM = recon.approach7Classify(svm, newComerName, descriptorSize, descriptorSteps, imgSize=imgSize3)
+time_SVM = (datetime.now() - initial_SVM).microseconds
+print("sift+svm___TIME: ", time_SVM)
+
+#print("SIFT+SVM: Results classify: ", result_SVM)
+#print("SIFT+SVM: Label: ", labels_dictionary[result_SVM])
+
+cv2.imshow("sift+knn___Gesture: "+labels_dictionary[result_KNN], newcomer)
+cv2.imshow("sift+svm___Gesture: "+labels_dictionary[result_SVM], newcomer)
 
 cv2.waitKey(0)
 

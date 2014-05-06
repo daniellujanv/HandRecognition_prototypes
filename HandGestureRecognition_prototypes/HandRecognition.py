@@ -194,7 +194,7 @@ def approach5(img):
 #------ end of approaches-------- #
 
 '''
-DENSE SIFT
+DENSE SIFT + K-Nearest Neighbor
 - get descriptors from picture
 - return descriptors
 '''
@@ -329,6 +329,75 @@ def approach6Classify(knn, imageName, descriptorSize, descriptorSteps, imgSize):
     #print("result:", results)
     #print("neighbours:", neighbours)
     #print("distance:", dist)
-    return ret, results, neighbours, dist
+    return int(ret), results, neighbours, dist
     
-        
+'''
+DENSE SIFT + SVM
+- get descriptors from training set
+- get labels from training set
+- train and save SVM 
+- return SVM
+'''
+def approach7TrainingInit():
+    #labels
+    # A = 0
+    # B = 1
+    # C = 2
+    # V = 3
+    # Points = 4
+    # Five = 5
+    labels_dictionary = { "A":0, "B":1, "C":2, "V":3, "Point":4, "Five":5}
+    imlist = []
+    descriptors = []
+    labels = []
+    for (_, _, filenames) in os.walk('HandGestureDB/descriptors/'):
+        imlist = filenames
+    #print imlist
+    for filename in imlist:
+        tmp = np.load('HandGestureDB/descriptors/'+filename)
+        descriptors.append(tmp.flatten())
+        featfile = str(filename[:-4])
+        #tmp = approach6(filename,featfile, size, steps, resize=resize)
+        #descriptors.append(tmp)
+        tmp_name = featfile.split('-')[0]
+        labels.append(labels_dictionary[tmp_name])
+    descriptors = np.array(descriptors, np.float32)
+    labels = np.array(labels)
+
+    svm_params = dict(kernel_type = cv2.SVM_LINEAR, svm_type = cv2.SVM_C_SVC, C=2.67)
+    svm = cv2.SVM()
+    svm.train(descriptors, labels, params=svm_params)
+    svm.save('savedData/svm_data.dat')
+    print("SIFT+SVM: SVM_data saved")
+    return svm
+
+'''
+- load saved SVM data
+- return svm
+'''
+def approach7TrainingFromFile():
+    svm = cv2.SVM()
+    svm.load('savedData/svm_data.dat')
+    return svm 
+
+'''
+- classify image with SVM
+- return result
+'''
+def approach7Classify(svm, imageName, descriptorSize, descriptorSteps, imgSize):
+    imgGray = cv2.cvtColor(cv2.imread('HandGestureDB/test/'+str(imageName)), cv2.COLOR_BGR2GRAY)
+    imgGray = cv2.resize(imgGray, imgSize)
+    m,n = imgGray.shape
+    x,y = np.meshgrid(range(descriptorSteps, m, descriptorSteps), range( descriptorSteps, n, descriptorSteps))
+    xx,yy = x.flatten(),y.flatten()
+    mask = zip(xx, yy)
+    keyPoints = [cv2.KeyPoint(x, y, descriptorSize) for (x, y) in mask]
+    sift = cv2.SIFT()
+    _, descriptors = sift.compute(imgGray, keyPoints)
+    descriptors = np.matrix(descriptors.flatten(), np.float32)
+
+    result = svm.predict(descriptors)
+    #print("res", result)
+    #result = result.flatten()
+    return int(result)
+
