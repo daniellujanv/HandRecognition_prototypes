@@ -194,6 +194,7 @@ def approach5(img):
 #------ end of approaches-------- #
 
 '''
+--------------------------------------------------------------------------
 DENSE SIFT + K-Nearest Neighbor
 - get descriptors from picture
 - return descriptors
@@ -220,15 +221,14 @@ def approach6GetDescriptors(imagename,resultname,size=20,steps=10, force_orienta
     # create frames and save to temporary file
     #scale = size/3.0
     x,y = np.meshgrid(range(steps,m,steps),range(steps,n,steps))
-    xx,yy = x.flatten(),y.flatten()
-    mask = zip(xx, yy)
+    mask = zip(x.flatten(),y.flatten())
     keyPoints = [cv2.KeyPoint(x, y, size) for (x, y) in mask]
 
     sift = cv2.SIFT()
     #shape = number of KeyPoints*128
     #print mask
     keyPoints, descriptors = sift.compute(imgGray, keyPoints)
-    np.save('HandGestureDB/descriptors/'+resultname, descriptors)
+    np.save('HandGestureDB/descriptors/SIFT/'+resultname, descriptors)
     #imgGray=cv2.drawKeypoints(imgGray,keyPoints,flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
     #print("Keypoints", keyPoints)
     #print("Descriptors", descriptors)  
@@ -290,11 +290,11 @@ def approach6TrainingFromFiles(size, steps, resize):
     imlist = []
     descriptors = []
     labels = []
-    for (_, _, filenames) in os.walk('HandGestureDB/descriptors/'):
+    for (_, _, filenames) in os.walk('HandGestureDB/descriptors/SIFT/'):
         imlist = filenames
     #print imlist
     for filename in imlist:
-        tmp = np.load('HandGestureDB/descriptors/'+filename)
+        tmp = np.load('HandGestureDB/descriptors/SIFT/'+filename)
         descriptors.append(tmp.flatten())
         featfile = str(filename[:-4])
         #tmp = approach6(filename,featfile, size, steps, resize=resize)
@@ -317,8 +317,7 @@ def approach6Classify(knn, imageName, descriptorSize, descriptorSteps, imgSize):
     imgGray = cv2.resize(imgGray, imgSize)
     m,n = imgGray.shape
     x,y = np.meshgrid(range(descriptorSteps, m, descriptorSteps), range( descriptorSteps, n, descriptorSteps))
-    xx,yy = x.flatten(),y.flatten()
-    mask = zip(xx, yy)
+    mask = zip(x.flatten(),y.flatten())
     keyPoints = [cv2.KeyPoint(x, y, descriptorSize) for (x, y) in mask]
     sift = cv2.SIFT()
     _, descriptors = sift.compute(imgGray, keyPoints)
@@ -331,7 +330,9 @@ def approach6Classify(knn, imageName, descriptorSize, descriptorSteps, imgSize):
     #print("distance:", dist)
     return int(ret), results, neighbours, dist
     
+
 '''
+--------------------------------------------------------------------------
 DENSE SIFT + SVM
 - get descriptors from training set
 - get labels from training set
@@ -389,8 +390,7 @@ def approach7Classify(svm, imageName, descriptorSize, descriptorSteps, imgSize):
     imgGray = cv2.resize(imgGray, imgSize)
     m,n = imgGray.shape
     x,y = np.meshgrid(range(descriptorSteps, m, descriptorSteps), range( descriptorSteps, n, descriptorSteps))
-    xx,yy = x.flatten(),y.flatten()
-    mask = zip(xx, yy)
+    mask = zip(x.flatten(),y.flatten())
     keyPoints = [cv2.KeyPoint(x, y, descriptorSize) for (x, y) in mask]
     sift = cv2.SIFT()
     _, descriptors = sift.compute(imgGray, keyPoints)
@@ -401,3 +401,145 @@ def approach7Classify(svm, imageName, descriptorSize, descriptorSteps, imgSize):
     #result = result.flatten()
     return int(result)
 
+'''
+--------------------------------------------------------------------------
+DENSE SURF + K-Nearest Neighbor
+- get descriptors from picture
+- return descriptors
+'''
+def approach8GetDescriptors(imagename,resultname,size=20,steps=10, force_orientation=False,resize=None):
+    """ Process an image with densely sampled SURF descriptors
+    and save the results in a file. Optional input: size of features,
+    steps between locations, forcing computation of descriptor orientation (False means all are oriented upwards), tuple for resizing the image."""
+    #im = Image.open(imagename).convert('L') #converts image to grayscale
+    imgGray = cv2.cvtColor(cv2.imread('HandGestureDB/train/'+str(imagename)), cv2.COLOR_BGR2GRAY)
+    if resize!=None:
+        imgGray = cv2.resize(imgGray, resize)
+    m,n = imgGray.shape
+    '''
+    will use this when training with different gestures
+    if imagename[-3:] != 'pgm': # create a pgm file
+        np.save('HandGestureDB/savedData/tmp.pgm', imgGray)
+        #im.save('tmp.pgm') 
+        imagename = 'tmp.pgm'
+    '''
+    #
+    #change frame to opencv mask
+    #
+    # create frames and save to temporary file
+    #scale = size/3.0
+    x,y = np.meshgrid(range(steps,m,steps),range(steps,n,steps))
+    mask = zip(x.flatten(),y.flatten())
+    keyPoints = [cv2.KeyPoint(x, y, size) for (x, y) in mask]
+
+    surf = cv2.SURF(300)
+    #shape = number of KeyPoints*128
+    #print mask
+    keyPoints, descriptors = surf.compute(imgGray, keyPoints)
+    np.save('HandGestureDB/descriptors/SURF/'+resultname, descriptors)
+    #imgGray=cv2.drawKeypoints(imgGray,keyPoints,flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+    #print("Keypoints", keyPoints)
+    #print("Descriptors", descriptors)  
+    #cv2.imshow('sift_keypoints.jpg',imgGray)
+    return descriptors
+    #cv2.waitKey(0)
+
+'''
+approach 8 training face
+- get descriptors from all pictures
+- save descriptors in files
+- return trained knn with descriptors
+'''
+def approach8TrainingInit(size, steps, resize):
+    #labels
+    # A = 0
+    # B = 1
+    # C = 2
+    # V = 3
+    # Points = 4
+    # Five = 5
+    labels_dictionary = { "A":0, "B":1, "C":2, "V":3, "Point":4, "Five":5}
+    # process images at fixed size (50,50)
+    imlist = []
+    descriptors = []
+    labels = []
+    for (_, _, filenames) in os.walk('HandGestureDB/train/'):
+        imlist = filenames
+    #print imlist
+    for filename in imlist:
+        featfile = str(filename[:-4])
+        tmp = approach8GetDescriptors(filename,featfile, size, steps, resize=resize)
+        descriptors.append(tmp.flatten())
+        tmp_name = featfile.split('-')[0]
+        labels.append(labels_dictionary[tmp_name])
+    descriptors = np.array(descriptors, np.float32)
+    #print descriptors
+    labels = np.array(labels)
+    knn = cv2.KNearest()
+    knn.train(descriptors, labels)
+    return knn
+
+'''
+approach 8 training face
+- read descriptors from files
+- return trained knn with descriptors
+'''
+def approach8TrainingFromFiles(size, steps, resize):
+    #labels
+    # A = 0
+    # B = 1
+    # C = 2
+    # V = 3
+    # Points = 4
+    # Five = 5
+    labels_dictionary = { "A":0, "B":1, "C":2, "V":3, "Point":4, "Five":5}
+
+    # process images at fixed size (50,50)
+    imlist = []
+    descriptors = []
+    labels = []
+    for (_, _, filenames) in os.walk('HandGestureDB/descriptors/SURF/'):
+        imlist = filenames
+    #print imlist
+    for filename in imlist:
+        tmp = np.load('HandGestureDB/descriptors/SURF/'+filename)
+        descriptors.append(tmp.flatten())
+        featfile = str(filename[:-4])
+        #tmp = approach6(filename,featfile, size, steps, resize=resize)
+        #descriptors.append(tmp)
+        tmp_name = featfile.split('-')[0]
+        labels.append(labels_dictionary[tmp_name])
+    
+    descriptors = np.array(descriptors, np.float32)
+    labels = np.array(labels)
+    knn = cv2.KNearest()
+    knn.train(descriptors, labels)
+    return knn
+
+'''
+- classify image with knn
+- return: ret, results, neighbours, dist
+'''
+def approach8Classify(knn, imageName, descriptorSize, descriptorSteps, imgSize):
+    imgGray = cv2.cvtColor(cv2.imread('HandGestureDB/test/'+str(imageName)), cv2.COLOR_BGR2GRAY)
+    imgGray = cv2.resize(imgGray, imgSize)
+    m,n = imgGray.shape
+    x,y = np.meshgrid(range(descriptorSteps, m, descriptorSteps), range( descriptorSteps, n, descriptorSteps))
+    mask = zip(x.flatten(),y.flatten())
+    keyPoints = [cv2.KeyPoint(x, y, descriptorSize) for (x, y) in mask]
+    surf = cv2.SURF(300)
+    _, descriptors = surf.compute(imgGray, keyPoints)
+    descriptors = np.matrix(descriptors.flatten(), np.float32)
+    imgGray=cv2.drawKeypoints(imgGray,keyPoints,flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+    #print("Keypoints", keyPoints)
+    #print("Descriptors", descriptors)  
+    cv2.imshow('surf_keypoints.jpg',imgGray)
+
+    #print("descriptors", descriptors)
+    ret, results, neighbours, dist = knn.find_nearest(descriptors, 1)
+    #print("ret:", ret)
+    #print("result:", results)
+    #print("neighbours:", neighbours)
+    #print("distance:", dist)
+    return int(ret), results, neighbours, dist
+    
