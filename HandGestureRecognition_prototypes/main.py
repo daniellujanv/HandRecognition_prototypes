@@ -1,6 +1,6 @@
 import cv2
 import HandRecognition as recon
-from datetime import datetime, time
+from datetime import datetime, timedelta
 import Tools as tools
 
 #------------------------- main method -------------------------------------------------
@@ -10,7 +10,7 @@ imgSize2 = (620, 440)
 imgSize3 = (310, 310)
 descriptorSize = 50
 descriptorSteps = 35
-labels_dictionary = ["A", "B", "C", "V", "Point", "Five"] #for approach 6 and 7
+labels_dictionary = ["A", "B", "C", "V", "Point", "Five"] #for approach 6, 7, 8
 ##labels
 ## A = 0
 ## B = 1
@@ -41,17 +41,28 @@ hand_22 = cv2.resize(cv2.imread('./images/hand_22.jpg'), imgSize)
 #cv2.waitKey(0)
 
 '''
-############# --------------------------------- 6 ------------------------------ #################
-###knn = K-Nearest Neighbors
-newComerName = 'hand_22.jpg'
+######### show trained gestures
+gestureA = cv2.resize(cv2.imread('HandGestureDB/train/A-uniform01.ppm'), imgSize3)
+gestureB = cv2.resize(cv2.imread('HandGestureDB/train/B-uniform01.ppm'), imgSize3)
+gestureC = cv2.resize(cv2.imread('HandGestureDB/train/C-uniform01.ppm'), imgSize3)
+gestureFive = cv2.resize(cv2.imread('HandGestureDB/train/Five-uniform01.ppm'), imgSize3)
+gesturePoint = cv2.resize(cv2.imread('HandGestureDB/train/Point-uniform01.ppm'), imgSize3)
+gestureV = cv2.resize(cv2.imread('HandGestureDB/train/V-uniform01.ppm'), imgSize3)
+tools.showImages(gestureA=gestureA, gestureB=gestureB, gestureC=gestureC, gestureFive=gestureFive,
+                 gesturePoint=gesturePoint, gestureV=gestureV)
+
+
+newComerName = 'hand_11.jpg'
 newcomer = cv2.resize(cv2.imread('HandGestureDB/test/'+newComerName), imgSize3)
 
+############# --------------------------------- 6 ------------------------------ #################
+###knn = K-Nearest Neighbors
 initial_SIFT = datetime.now()
-#knn = recon.approach6TrainingInit(descriptorSize, descriptorSteps,resize=imgSize3)
+#knnSIFT = recon.approach6TrainingInit(descriptorSize, descriptorSteps,resize=imgSize3)
 knnSIFT = recon.approach6TrainingFromFiles(descriptorSize, descriptorSteps,resize=imgSize3)
 result_SIFT, _, _, _ = recon.approach6Classify(knnSIFT, newComerName, descriptorSize, descriptorSteps, imgSize=imgSize3)
-time_SIFT = (datetime.now() - initial_SIFT).microseconds
-print("sift+knn___TIME: ", time_SIFT)
+time_SIFT = timedelta( microseconds = (datetime.now() - initial_SIFT).microseconds)
+print("sift+knn___seconds: ", time_SIFT.total_seconds())
 #print("SIFT+KNN: newComer results:", result_KNN)
 #print("SIFT+KNN: Label: ", labels_dictionary[result_KNN])
 
@@ -61,8 +72,8 @@ print("sift+knn___TIME: ", time_SIFT)
 initial_SVM = datetime.now()
 svm = recon.approach7TrainingFromFile()
 result_SVM = recon.approach7Classify(svm, newComerName, descriptorSize, descriptorSteps, imgSize=imgSize3)
-time_SVM = (datetime.now() - initial_SVM).microseconds
-print("sift+svm___TIME: ", time_SVM)
+time_SVM = timedelta( microseconds=(datetime.now() - initial_SVM).microseconds)
+print("sift+svm___seconds: ", time_SVM.total_seconds() )
 
 #print("SIFT+SVM: Results classify: ", result_SVM)
 #print("SIFT+SVM: Label: ", labels_dictionary[result_SVM])
@@ -73,8 +84,8 @@ initial_SURF = datetime.now()
 #knnSURF = recon.approach8TrainingInit(descriptorSize, descriptorSteps,resize=imgSize3)
 knnSURF = recon.approach8TrainingFromFiles(descriptorSize, descriptorSteps,resize=imgSize3)
 result_SURF, _, _, _ = recon.approach8Classify(knnSURF, newComerName, descriptorSize, descriptorSteps, imgSize=imgSize3)
-time_SURF = (datetime.now() - initial_SURF).microseconds
-print("surf+knn___TIME: ", time_SURF)
+time_SURF = timedelta(microseconds=(datetime.now() - initial_SURF).microseconds)
+print("surf+knn___seconds: ", time_SURF.total_seconds())
 
 cv2.imshow("sift+knn___Gesture: "+labels_dictionary[result_SIFT], newcomer)
 cv2.imshow("surf+knn___Gesture: "+labels_dictionary[result_SURF], newcomer)

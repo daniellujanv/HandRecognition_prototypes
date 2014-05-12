@@ -413,6 +413,7 @@ def approach8GetDescriptors(imagename,resultname,size=20,steps=10, force_orienta
     steps between locations, forcing computation of descriptor orientation (False means all are oriented upwards), tuple for resizing the image."""
     #im = Image.open(imagename).convert('L') #converts image to grayscale
     imgGray = cv2.cvtColor(cv2.imread('HandGestureDB/train/'+str(imagename)), cv2.COLOR_BGR2GRAY)
+    imgGray = cv2.equalizeHist(imgGray)
     if resize!=None:
         imgGray = cv2.resize(imgGray, resize)
     m,n = imgGray.shape

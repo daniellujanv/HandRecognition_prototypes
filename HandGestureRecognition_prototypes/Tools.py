@@ -6,27 +6,14 @@ import math
 Written and Assembled  (2012,2013) by  Dan Witzner Hansen, IT University.
 '''
 def showImages(**images):
-
     plt.figure(1)
-    plt.figure
-        #    im=[]
-#    for i in image:
-#        im.append(array(i))
-#    i = 1
-    for (counter, (k,v)) in enumerate(images.items()): ##See how to use the $enumerate()$ function for creating a counter in a loop.
+    for (counter, (k,v)) in enumerate(images.items()): 
         plt.subplot(1,len(images)  ,counter)
         plt.imshow( cv2.cvtColor(v, cv2.COLOR_BGR2RGB))
         plt.title(k)
-    plt.show()
-#    for (name, im) in images.items():
-        #cv2.namedWindow(str(name), cv2.WINDOW_NORMAL)## create a window called 'By OpenCV' Using the \nw{cv2.WINDOW_AUTOSIZE} parameter when defining a window display the image with its actual size in the window.
-        #cv2.imshow(str(name), np.array(im)) ## show the image in 'By OpenCV' window
-#        plt.subplot(1,1,i)
-#        plt.imshow(np.array(im))
-#        plt.title(str(name))
-#        i = i + 1
-#    cv2.namedWindow('2', cv2.WINDOW_AUTOSIZE)
-#    cv2.imshow('2', im[1]) 
+        plt.axis('off')
+        plt.subplots_adjust(left=0.0, right=1.0, bottom=0.0, wspace=0.1)
+    plt.show(block=False)
 
 def getCircleSamples(center=(0,0),radius=1,nPoints=30):
     ''' Samples a circle with center center = (x,y) , radius =1 and in nPoints on the circle.
